@@ -323,7 +323,7 @@ export async function powerUpWithSteemKeychain(
 }
 
 /**
- * Start a 13-week Power Down of Steem Power
+ * Start a 4-week Power Down of Steem Power (4 weekly installments)
  */
 export async function powerDownWithSteemKeychain(
   username: string,

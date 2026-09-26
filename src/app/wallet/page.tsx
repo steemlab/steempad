@@ -680,11 +680,11 @@ export default function WalletPage() {
             <div className="bg-gradient-to-r from-amber-950/40 via-gray-900 to-amber-950/20 border border-amber-800/60 rounded-3xl p-6 shadow-md">
               <div className="flex items-center gap-2.5 text-amber-400 font-bold text-sm mb-2">
                 <Clock className="w-4 h-4 animate-pulse" />
-                <span>Active 13-Week Power Down in Progress</span>
+                <span>Active 4-Week Power Down in Progress</span>
               </div>
               <p className="text-xs text-gray-300 leading-relaxed mb-4">
-                This account is converting Steem Power into liquid STEEM. Every 7 days, 1/13th is
-                credited to your liquid balance automatically.
+                This account is converting Steem Power into liquid STEEM. Every 7 days, 1/4th is
+                credited to your liquid balance automatically (Steem 4-week power down schedule).
               </p>
 
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-center">
@@ -723,7 +723,7 @@ export default function WalletPage() {
               {actionModal === "delegate" && <Share2 className="w-5 h-5 text-purple-400" />}
               <span>
                 {actionModal === "powerup" && "Power Up STEEM"}
-                {actionModal === "powerdown" && "Initiate 13-Week Power Down"}
+                {actionModal === "powerdown" && "Initiate 4-Week Power Down"}
                 {actionModal === "transfer" && "Smart Steem Transfer"}
                 {actionModal === "delegate" && "Delegate Steem Power (SP)"}
               </span>

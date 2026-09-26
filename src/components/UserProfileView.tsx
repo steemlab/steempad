@@ -17,9 +17,6 @@ import {
   Check,
   UserCheck,
   UserPlus,
-  Shield,
-  Zap,
-  Layers,
   ArrowUpRight,
   MessageSquare,
   FileText,
@@ -167,6 +164,13 @@ export default function UserProfileView({
   const regeneratedVP = (elapsedSec * 10000) / 432000;
   const currentVP = Math.min(100, Math.max(0, (account.voting_power + regeneratedVP) / 100)).toFixed(1);
 
+  const isOwnProfile = Boolean(
+    isLoggedIn &&
+      user?.username &&
+      account?.name &&
+      user.username.toLowerCase() === account.name.toLowerCase()
+  );
+
   const handleCopyLink = () => {
     if (typeof window !== "undefined") {
       navigator.clipboard.writeText(window.location.href);
@@ -226,38 +230,42 @@ export default function UserProfileView({
 
           {/* Quick Action Overlay Buttons (Top Right) */}
           <div className="absolute top-4 right-4 flex items-center gap-2 z-10">
-            <button
-              onClick={() => setTipModalOpen(true)}
-              className="px-3.5 py-1.5 rounded-xl bg-amber-500/90 hover:bg-amber-500 text-black font-bold text-xs flex items-center gap-1.5 transition shadow-lg cursor-pointer backdrop-blur-sm"
-              title="Tip author with STEEM or SBD"
-            >
-              <Coins className="w-3.5 h-3.5" />
-              <span>Tip</span>
-            </button>
+            {!isOwnProfile && (
+              <>
+                <button
+                  onClick={() => setTipModalOpen(true)}
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-500/90 hover:bg-amber-500 text-black font-bold text-xs flex items-center gap-1.5 transition shadow-lg cursor-pointer backdrop-blur-sm"
+                  title="Tip author with STEEM or SBD"
+                >
+                  <Coins className="w-3.5 h-3.5" />
+                  <span>Tip</span>
+                </button>
 
-            <button
-              onClick={handleFollowToggle}
-              disabled={followLoading}
-              className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition shadow-lg cursor-pointer backdrop-blur-sm ${
-                isFollowing
-                  ? "bg-gray-800/90 hover:bg-red-950/80 text-gray-200 hover:text-red-300 border border-gray-700/80 hover:border-red-800"
-                  : "bg-blue-600 hover:bg-blue-500 text-white"
-              }`}
-            >
-              {followLoading ? (
-                <span>…</span>
-              ) : isFollowing ? (
-                <>
-                  <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-                  <span>Following</span>
-                </>
-              ) : (
-                <>
-                  <UserPlus className="w-3.5 h-3.5" />
-                  <span>Follow</span>
-                </>
-              )}
-            </button>
+                <button
+                  onClick={handleFollowToggle}
+                  disabled={followLoading}
+                  className={`px-3.5 py-1.5 rounded-xl font-bold text-xs flex items-center gap-1.5 transition shadow-lg cursor-pointer backdrop-blur-sm ${
+                    isFollowing
+                      ? "bg-gray-800/90 hover:bg-red-950/80 text-gray-200 hover:text-red-300 border border-gray-700/80 hover:border-red-800"
+                      : "bg-blue-600 hover:bg-blue-500 text-white"
+                  }`}
+                >
+                  {followLoading ? (
+                    <span>…</span>
+                  ) : isFollowing ? (
+                    <>
+                      <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+                      <span>Following</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-3.5 h-3.5" />
+                      <span>Follow</span>
+                    </>
+                  )}
+                </button>
+              </>
+            )}
 
             <button
               onClick={handleCopyLink}
@@ -276,23 +284,88 @@ export default function UserProfileView({
         {/* Profile Identity Bar (Overlapping Banner) */}
         <div className="px-6 pb-6 pt-0 relative">
           <div className="flex flex-col sm:flex-row items-center sm:items-end gap-5 -mt-16 sm:-mt-20 mb-4 text-center sm:text-left">
-            {/* Avatar */}
-            <div className="relative group shrink-0">
-              {profileMeta.profile_image ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={profileMeta.profile_image}
-                  alt={account.name}
-                  className="w-28 h-28 sm:w-32 sm:h-32 rounded-full object-cover bg-gray-900 border-4 border-gray-900 shadow-2xl ring-2 ring-blue-500/40"
-                  onError={(e) => {
-                    (e.target as HTMLElement).style.display = "none";
-                  }}
-                />
-              ) : (
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-4xl font-extrabold text-white border-4 border-gray-900 shadow-2xl ring-2 ring-blue-500/40">
-                  {account.name.slice(0, 2).toUpperCase()}
+            {/* Avatar with Neon Circular Voting Power Ring */}
+            <div
+              className="relative group shrink-0"
+              title={`Voting Power: ${currentVP}%`}
+            >
+              <div className="relative w-28 h-28 sm:w-32 sm:h-32 flex items-center justify-center">
+                {/* SVG Neon Circular Progress Ring */}
+                <svg
+                  className="w-full h-full -rotate-90 pointer-events-none transform"
+                  viewBox="0 0 120 120"
+                >
+                  <defs>
+                    <linearGradient id="vpNeonGradient" x1="0%" y1="0%" x2="100%" y2="100%">
+                      <stop offset="0%" stopColor="#00f2fe" />
+                      <stop offset="50%" stopColor="#06b6d4" />
+                      <stop offset="100%" stopColor="#10b981" />
+                    </linearGradient>
+                    <filter id="neonGlow" x="-20%" y="-20%" width="140%" height="140%">
+                      <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+                      <feMerge>
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="coloredBlur" />
+                        <feMergeNode in="SourceGraphic" />
+                      </feMerge>
+                    </filter>
+                  </defs>
+
+                  {/* Background Track Circle */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke="#1e293b"
+                    strokeWidth="3.5"
+                    strokeOpacity="0.8"
+                  />
+
+                  {/* Active Neon Progress Ring (Drains as VP decreases) */}
+                  <circle
+                    cx="60"
+                    cy="60"
+                    r="54"
+                    fill="none"
+                    stroke="url(#vpNeonGradient)"
+                    strokeWidth="3.5"
+                    strokeDasharray={339.29}
+                    strokeDashoffset={
+                      339.29 * (1 - Math.min(100, Math.max(0, parseFloat(currentVP) || 0)) / 100)
+                    }
+                    strokeLinecap="round"
+                    filter="url(#neonGlow)"
+                    className="transition-all duration-1000 ease-out"
+                  />
+                </svg>
+
+                {/* Avatar Image nested within the neon ring */}
+                <div className="absolute inset-0 flex items-center justify-center">
+                  <div className="w-[84px] h-[84px] sm:w-[98px] sm:h-[98px] rounded-full overflow-hidden bg-gray-900 border-2 border-gray-950 shadow-2xl">
+                    {profileMeta.profile_image ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={profileMeta.profile_image}
+                        alt={account.name}
+                        className="w-full h-full object-cover"
+                        onError={(e) => {
+                          (e.target as HTMLElement).style.display = "none";
+                        }}
+                      />
+                    ) : (
+                      <div className="w-full h-full bg-gradient-to-tr from-blue-600 to-indigo-500 flex items-center justify-center text-3xl font-extrabold text-white">
+                        {account.name.slice(0, 2).toUpperCase()}
+                      </div>
+                    )}
+                  </div>
                 </div>
-              )}
+              </div>
+
+              {/* Hover Badge showing exact VP % */}
+              <div className="opacity-0 group-hover:opacity-100 transition-opacity duration-200 absolute -bottom-2.5 left-1/2 -translate-x-1/2 px-2 py-0.5 rounded-full bg-gray-950/95 border border-cyan-500/50 shadow-[0_0_12px_rgba(6,182,212,0.6)] text-[10px] font-mono font-bold text-cyan-300 whitespace-nowrap pointer-events-none z-20">
+                {currentVP}% VP
+              </div>
             </div>
 
             {/* Display Name, Handle & Reputation */}
@@ -327,16 +400,16 @@ export default function UserProfileView({
             </div>
           )}
 
-          {/* Social Stats Strip (Followers, Posts, Following, Total SP) */}
+          {/* Social Stats Strip (Followers, Posts, Following) */}
           <div className="flex flex-wrap items-center justify-center sm:justify-start gap-x-4 gap-y-2 py-3 border-y border-gray-800/80 text-xs text-gray-300">
             <span className="font-semibold text-white">
-              {followCount.follower_count.toLocaleString()}{" "}
+              <span suppressHydrationWarning>{followCount.follower_count.toLocaleString()}</span>{" "}
               <span className="text-gray-400 font-normal">followers</span>
             </span>
             <span className="text-gray-600">·</span>
 
             <span className="font-semibold text-white">
-              {account.post_count.toLocaleString()}{" "}
+              <span suppressHydrationWarning>{account.post_count.toLocaleString()}</span>{" "}
               <span className="text-gray-400 font-normal">posts</span>
             </span>
             <span className="text-gray-600">·</span>
@@ -346,15 +419,10 @@ export default function UserProfileView({
                 <span className="text-gray-400 font-normal">Not following anybody</span>
               ) : (
                 <>
-                  {followCount.following_count.toLocaleString()}{" "}
+                  <span suppressHydrationWarning>{followCount.following_count.toLocaleString()}</span>{" "}
                   <span className="text-gray-400 font-normal">following</span>
                 </>
               )}
-            </span>
-            <span className="text-gray-600">·</span>
-
-            <span className="font-bold text-blue-400">
-              {Math.round(totalSP).toLocaleString()} SP
             </span>
           </div>
 
@@ -390,101 +458,6 @@ export default function UserProfileView({
               <Clock className="w-3.5 h-3.5 text-gray-500" />
               <span>Active {lastActive}</span>
             </span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─── Highlights & Balance Breakdown Cards ──────────────── */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {/* Card 1: TOTAL SP (Large Character) & VESTS (Small and Faded) */}
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span className="font-bold uppercase tracking-wider flex items-center gap-1 text-blue-400">
-              <Zap className="w-3.5 h-3.5" />
-              <span>Total Steem Power</span>
-            </span>
-            <span className="text-[10px] text-gray-500">Effective SP</span>
-          </div>
-
-          {/* Big character Total SP */}
-          <div className="text-2xl sm:text-3xl font-black text-blue-400 tracking-tight">
-            {Math.round(totalSP).toLocaleString()} <span className="text-lg font-bold">SP</span>
-          </div>
-
-          {/* Small and faded VESTS characters below Total SP */}
-          <div className="pt-1.5 border-t border-gray-800/80 space-y-0.5">
-            <div className="text-xs text-gray-500 font-mono tracking-tight">
-              {Math.round(ownVests).toLocaleString()} VESTS
-            </div>
-            <div className="text-[11px] text-gray-400 leading-snug">
-              Own: {Math.round(ownSP).toLocaleString()} SP
-              {receivedSP > 0 && (
-                <span className="text-emerald-400/90 font-medium">
-                  {" "}· +{Math.round(receivedSP).toLocaleString()} SP received
-                </span>
-              )}
-              {delegatedSP > 0 && (
-                <span className="text-amber-400/90 font-medium">
-                  {" "}· -{Math.round(delegatedSP).toLocaleString()} SP delegated
-                </span>
-              )}
-            </div>
-          </div>
-        </div>
-
-        {/* Card 2: Liquid STEEM */}
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span className="font-bold uppercase tracking-wider flex items-center gap-1 text-emerald-400">
-              <Coins className="w-3.5 h-3.5" />
-              <span>Available STEEM</span>
-            </span>
-            <span className="text-[10px] text-gray-500">Liquid Balance</span>
-          </div>
-
-          <div className="text-2xl sm:text-3xl font-black text-emerald-400 tracking-tight">
-            {parseFloat(account.balance || "0").toLocaleString(undefined, {
-              minimumFractionDigits: 3,
-              maximumFractionDigits: 3,
-            })}{" "}
-            <span className="text-lg font-bold">STEEM</span>
-          </div>
-
-          <div className="pt-1.5 border-t border-gray-800/80 text-[11px] text-gray-500">
-            Liquid token for instantaneous transfers and tipping
-          </div>
-        </div>
-
-        {/* Card 3: Steem Dollars (SBD) & Voting Power */}
-        <div className="bg-gray-900 border border-gray-800 rounded-3xl p-5 shadow-sm space-y-2">
-          <div className="flex items-center justify-between text-xs text-gray-400">
-            <span className="font-bold uppercase tracking-wider flex items-center gap-1 text-amber-400">
-              <Shield className="w-3.5 h-3.5" />
-              <span>Steem Dollars</span>
-            </span>
-            <span className="text-[10px] text-emerald-400 font-semibold">{currentVP}% VP</span>
-          </div>
-
-          <div className="text-2xl sm:text-3xl font-black text-amber-400 tracking-tight">
-            {parseFloat(account.sbd_balance || "0").toLocaleString(undefined, {
-              minimumFractionDigits: 3,
-              maximumFractionDigits: 3,
-            })}{" "}
-            <span className="text-lg font-bold">SBD</span>
-          </div>
-
-          {/* Voting power progress bar */}
-          <div className="pt-1.5 border-t border-gray-800/80 space-y-1">
-            <div className="w-full bg-gray-950 h-1.5 rounded-full overflow-hidden border border-gray-800">
-              <div
-                className="bg-gradient-to-r from-emerald-500 to-cyan-400 h-full rounded-full transition-all duration-500"
-                style={{ width: `${Math.min(100, Math.max(0, parseFloat(currentVP)))}%` }}
-              />
-            </div>
-            <div className="flex justify-between text-[10px] text-gray-500">
-              <span>Voting Power: {currentVP}%</span>
-              <span>100% in 5 days</span>
-            </div>
           </div>
         </div>
       </div>

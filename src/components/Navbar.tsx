@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCurrency } from "@/context/CurrencyContext";
@@ -18,6 +18,8 @@ import {
   LogOut,
   ChevronDown,
   Globe,
+  Sun,
+  Moon,
   Menu,
   X,
   Bookmark,
@@ -37,13 +39,30 @@ export default function Navbar() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const [mounted, setMounted] = useState(false);
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  const currencyRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setMounted(true);
     setSavedCount(getBookmarks().length);
 
+    const savedTheme = (localStorage.getItem("steempad_theme") as "dark" | "light") || "dark";
+    setTheme(savedTheme);
+
     const updateSaved = () => setSavedCount(getBookmarks().length);
     window.addEventListener("steempad_bookmarks_updated", updateSaved);
+
+    // Close dropdowns when clicking anywhere outside
+    const handleClickOutside = (e: MouseEvent) => {
+      if (currencyRef.current && !currencyRef.current.contains(e.target as Node)) {
+        setCurrencyDropdown(false);
+      }
+      if (userRef.current && !userRef.current.contains(e.target as Node)) {
+        setUserDropdown(false);
+      }
+    };
 
     // Global Cmd+K / Ctrl+K shortcut listener
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -57,12 +76,29 @@ export default function Navbar() {
       }
     };
 
+    document.addEventListener("mousedown", handleClickOutside);
     window.addEventListener("keydown", handleKeyDown);
     return () => {
       window.removeEventListener("steempad_bookmarks_updated", updateSaved);
+      document.removeEventListener("mousedown", handleClickOutside);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
+
+  const toggleTheme = () => {
+    const next = theme === "dark" ? "light" : "dark";
+    setTheme(next);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("steempad_theme", next);
+      if (next === "light") {
+        document.documentElement.classList.add("light");
+        document.documentElement.classList.remove("dark");
+      } else {
+        document.documentElement.classList.add("dark");
+        document.documentElement.classList.remove("light");
+      }
+    }
+  };
 
   const currencies: { code: CurrencyCode; label: string; symbol: string }[] = [
     { code: "USD", label: "US Dollar", symbol: "$" },
@@ -165,7 +201,7 @@ export default function Navbar() {
           </button>
 
           {/* Currency Switcher (Icon only) */}
-          <div className="relative">
+          <div className="relative" ref={currencyRef}>
             <button
               type="button"
               onClick={() => {
@@ -209,6 +245,32 @@ export default function Navbar() {
             )}
           </div>
 
+          {/* Light / Dark Mode Switcher (Icon-only with smooth rotation/scale animations) */}
+          <button
+            type="button"
+            onClick={toggleTheme}
+            aria-label={`Toggle theme mode (currently ${theme} mode)`}
+            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
+            className="p-2 rounded-full bg-zinc-900/80 hover:bg-zinc-800 border border-white/[0.08] text-zinc-300 hover:text-white transition flex items-center justify-center cursor-pointer active:scale-90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-500 overflow-hidden relative"
+          >
+            <div className="relative w-4 h-4 flex items-center justify-center pointer-events-none">
+              <Sun
+                className={`w-4 h-4 text-amber-400 absolute transition-all duration-300 transform ${
+                  theme === "light"
+                    ? "rotate-0 scale-100 opacity-100"
+                    : "rotate-90 scale-0 opacity-0"
+                }`}
+              />
+              <Moon
+                className={`w-4 h-4 text-cyan-400 absolute transition-all duration-300 transform ${
+                  theme === "dark"
+                    ? "rotate-0 scale-100 opacity-100"
+                    : "-rotate-90 scale-0 opacity-0"
+                }`}
+              />
+            </div>
+          </button>
+
           {/* Activity Notifications */}
           <NotificationCenter />
 
@@ -228,7 +290,7 @@ export default function Navbar() {
           {!mounted ? (
             <div className="w-8 h-8 rounded-full bg-zinc-800 animate-pulse" />
           ) : isLoggedIn && user ? (
-            <div className="relative">
+            <div className="relative" ref={userRef}>
               <button
                 type="button"
                 onClick={() => {

@@ -22,14 +22,17 @@ export default function NotificationCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [filter, setFilter] = useState<"all" | "replies" | "transfers" | "votes">("all");
   const [unreadCount, setUnreadCount] = useState(0);
+  const [lastReadTime, setLastReadTime] = useState<number>(0);
+  const [isMarkingRead, setIsMarkingRead] = useState(false);
+  const [justMarkedRead, setJustMarkedRead] = useState(false);
   const [loading, setLoading] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const STORAGE_KEY = user ? `steempad_last_read_${user.username}` : "";
 
-  // Close dropdown on outside click or Escape
+  // Close dropdown on outside click (mouse or touch) or Escape
   useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
+    function handleClickOutside(event: MouseEvent | TouchEvent) {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsOpen(false);
       }
@@ -40,10 +43,14 @@ export default function NotificationCenter() {
       }
     }
 
-    document.addEventListener("mousedown", handleClickOutside);
-    window.addEventListener("keydown", handleKeyDown);
+    if (isOpen) {
+      document.addEventListener("mousedown", handleClickOutside);
+      document.addEventListener("touchstart", handleClickOutside);
+      window.addEventListener("keydown", handleKeyDown);
+    }
     return () => {
       document.removeEventListener("mousedown", handleClickOutside);
+      document.removeEventListener("touchstart", handleClickOutside);
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, [isOpen]);
@@ -67,9 +74,13 @@ export default function NotificationCenter() {
         setNotifications(notifs);
 
         // Calculate unread
-        const lastRead = localStorage.getItem(`steempad_last_read_${user.username}`) || "0";
+        const storedLastRead = parseInt(
+          localStorage.getItem(`steempad_last_read_${user.username}`) || "0",
+          10
+        );
+        setLastReadTime(storedLastRead);
         const unread = notifs.filter(
-          (n) => new Date(n.timestamp + "Z").getTime() > parseInt(lastRead)
+          (n) => new Date(n.timestamp + "Z").getTime() > storedLastRead
         ).length;
         setUnreadCount(unread);
       } catch {
@@ -89,16 +100,23 @@ export default function NotificationCenter() {
   }, [user, isLoggedIn]);
 
   const handleMarkAllRead = () => {
-    if (!user) return;
-    localStorage.setItem(STORAGE_KEY, Date.now().toString());
-    setUnreadCount(0);
+    if (!user || isMarkingRead) return;
+    setIsMarkingRead(true);
+
+    // Smooth sweep animation before persisting read status
+    setTimeout(() => {
+      const now = Date.now();
+      localStorage.setItem(STORAGE_KEY, now.toString());
+      setLastReadTime(now);
+      setUnreadCount(0);
+      setIsMarkingRead(false);
+      setJustMarkedRead(true);
+      setTimeout(() => setJustMarkedRead(false), 2200);
+    }, 550);
   };
 
   const handleOpenDropdown = () => {
     setIsOpen(!isOpen);
-    if (!isOpen && unreadCount > 0) {
-      handleMarkAllRead();
-    }
   };
 
   if (!isLoggedIn || !user) return null;
@@ -122,7 +140,7 @@ export default function NotificationCenter() {
       >
         <Bell className="w-4 h-4" />
         {unreadCount > 0 && (
-          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-red-500 text-white text-[10px] font-bold rounded-full flex items-center justify-center tabular-nums animate-pulse">
+          <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 px-1 bg-cyan-500 text-black text-[10px] font-extrabold rounded-full flex items-center justify-center tabular-nums animate-pulse shadow-[0_0_8px_rgba(6,182,212,0.8)]">
             {unreadCount > 9 ? "9+" : unreadCount}
           </span>
         )}
@@ -140,16 +158,40 @@ export default function NotificationCenter() {
             <div className="flex items-center gap-2">
               <Bell className="w-4 h-4 text-cyan-400" />
               <h3 className="text-sm font-bold text-white">Activity Radar</h3>
+              {unreadCount > 0 && (
+                <span className="px-1.5 py-0.5 text-[10px] rounded-full bg-cyan-950/80 text-cyan-300 border border-cyan-800/80 font-bold">
+                  {unreadCount} new
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
                 type="button"
                 onClick={handleMarkAllRead}
-                className="text-[11px] text-zinc-400 hover:text-cyan-400 flex items-center gap-1 transition cursor-pointer"
+                disabled={isMarkingRead || (unreadCount === 0 && !justMarkedRead)}
+                className={`text-[11px] flex items-center gap-1.5 transition-all duration-300 px-2.5 py-1 rounded-xl cursor-pointer ${
+                  justMarkedRead
+                    ? "text-emerald-400 bg-emerald-950/40 border border-emerald-800/60 font-semibold"
+                    : isMarkingRead
+                    ? "text-cyan-300 bg-cyan-950/40 border border-cyan-800/60 font-semibold cursor-wait"
+                    : unreadCount > 0
+                    ? "text-zinc-300 hover:text-cyan-300 hover:bg-zinc-800 border border-zinc-700/60 active:scale-95"
+                    : "text-zinc-500 cursor-default opacity-60"
+                }`}
                 title="Mark all as read"
               >
-                <Check className="w-3 h-3" />
-                <span>Mark read</span>
+                <Check
+                  className={`w-3.5 h-3.5 transition-all duration-500 ${
+                    isMarkingRead
+                      ? "animate-spin text-cyan-400 scale-125"
+                      : justMarkedRead
+                      ? "text-emerald-400 scale-110"
+                      : "text-zinc-400"
+                  }`}
+                />
+                <span>
+                  {isMarkingRead ? "Marking read…" : justMarkedRead ? "All caught up ✓" : "Mark read"}
+                </span>
               </button>
               <button
                 type="button"
@@ -222,6 +264,7 @@ export default function NotificationCenter() {
               </div>
             ) : (
               filteredNotifs.map((n) => {
+                const isUnread = new Date(n.timestamp + "Z").getTime() > lastReadTime;
                 let icon = <MessageSquare className="w-4 h-4 text-cyan-400" />;
                 let link = `/@${n.actor}`;
                 if (n.type === "reply") {
@@ -246,17 +289,33 @@ export default function NotificationCenter() {
                     key={n.id}
                     href={link}
                     onClick={() => setIsOpen(false)}
-                    className="p-3.5 hover:bg-zinc-800/60 transition flex items-start gap-3 block group"
+                    className={`p-3.5 transition-all duration-500 flex items-start gap-3 block group ${
+                      isMarkingRead && isUnread
+                        ? "bg-cyan-500/15 scale-[0.98] opacity-75 border-l-2 border-cyan-400"
+                        : isUnread
+                        ? "bg-zinc-850/60 hover:bg-zinc-800/80 border-l-2 border-cyan-500"
+                        : "hover:bg-zinc-800/60 border-l-2 border-transparent"
+                    }`}
                   >
-                    <div className="p-2 rounded-xl bg-zinc-800 group-hover:bg-zinc-700/80 transition shrink-0 mt-0.5">
+                    <div className="p-2 rounded-xl bg-zinc-800 group-hover:bg-zinc-700/80 transition shrink-0 mt-0.5 relative">
                       {icon}
+                      {isUnread && (
+                        <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-cyan-400 ring-2 ring-zinc-900 animate-pulse" />
+                      )}
                     </div>
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between text-xs">
-                        <span className="font-semibold text-white truncate">
-                          @{n.actor}
-                        </span>
-                        <span className="text-[10px] text-zinc-500 shrink-0 tabular-nums">
+                        <div className="flex items-center gap-1.5 min-w-0">
+                          <span className="font-semibold text-white truncate">
+                            @{n.actor}
+                          </span>
+                          {isUnread && (
+                            <span className="text-[9px] uppercase tracking-wider font-extrabold text-cyan-400 bg-cyan-950/80 px-1 rounded border border-cyan-800/60">
+                              NEW
+                            </span>
+                          )}
+                        </div>
+                        <span className="text-[10px] text-zinc-500 shrink-0 tabular-nums ml-2">
                           {timeAgo(n.timestamp)}
                         </span>
                       </div>
