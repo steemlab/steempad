@@ -457,4 +457,40 @@ export function getSteemKeychainMobileBrowseUrl(targetUrl?: string): string {
   return `steem-keychain://browse?url=${encodeURIComponent(current)}`;
 }
 
+/**
+ * Broadcast follow or unfollow operation via Steem Keychain
+ */
+export async function followUserWithSteemKeychain(
+  follower: string,
+  following: string,
+  unfollow = false
+): Promise<KeychainResponse> {
+  const ready = await waitForSteemKeychain(500);
+  if (!ready || !window.steem_keychain) {
+    return { success: false, error: "Steem Keychain not installed." };
+  }
+
+  const json = JSON.stringify([
+    "follow",
+    {
+      follower,
+      following,
+      what: unfollow ? [] : ["blog"],
+    },
+  ]);
+
+  return new Promise((resolve) => {
+    window.steem_keychain!.requestCustomJson(
+      follower,
+      "follow",
+      "Posting",
+      json,
+      unfollow ? `Unfollow @${following}` : `Follow @${following}`,
+      (res: KeychainResponse) => {
+        resolve(res);
+      }
+    );
+  });
+}
+
 

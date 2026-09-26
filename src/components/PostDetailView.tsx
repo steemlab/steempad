@@ -62,6 +62,16 @@ interface CommentData {
   net_votes?: number;
 }
 
+function cleanLeadingConjunction(sentence: string): string {
+  if (!sentence) return "";
+  const cleaned = sentence.replace(
+    /^(?:however|furthermore|moreover|additionally|in addition|therefore|also|consequently|besides|on the other hand|meanwhile|nevertheless|nonetheless),?\s*/i,
+    ""
+  );
+  if (!cleaned) return sentence;
+  return cleaned.charAt(0).toUpperCase() + cleaned.slice(1);
+}
+
 function extractSummaryBullets(raw: string): string[] {
   const cleanText = cleanExcerpt(raw || "", 3000);
   if (!cleanText || cleanText.length < 50) {
@@ -77,7 +87,8 @@ function extractSummaryBullets(raw: string): string[] {
     return ["Could not extract key points from this article."];
   }
 
-  const scored = allSentences.map((sentence, idx) => {
+  const scored = allSentences.map((rawSentence, idx) => {
+    const sentence = cleanLeadingConjunction(rawSentence);
     let score = 0;
     const positionRatio = idx / allSentences.length;
     if (positionRatio < 0.15) score += 4;
@@ -89,10 +100,11 @@ function extractSummaryBullets(raw: string): string[] {
     if (/\d+[\.\,]?\d*\s*(%|STEEM|SBD|SP|USD|percent)/i.test(sentence)) score += 3;
     if (/\d{2,}/.test(sentence)) score += 1;
 
-    if (/\b(should|must|need|important|recommend|suggest|propose|conclude|therefore|result|because|improve|change|add|create|implement)\b/i.test(sentence)) score += 2;
+    if (/\b(should|must|need|important|recommend|suggest|propose|conclude|result|because|improve|change|add|create|implement)\b/i.test(sentence)) score += 2;
 
     if (/\b(thank|regards|hello|dear|welcome|subscribe|follow|upvote|resteem|share this|click here|join us)\b/i.test(sentence)) score -= 5;
     if (/^(CC:|cc:|Image source|Source:|Photo|Posted via|Originally published)/i.test(sentence)) score -= 5;
+    if (/^(However|Furthermore|Moreover|Therefore)/i.test(rawSentence)) score -= 2;
 
     if (/\b(I hope|I wish|I think|In my opinion)\b/i.test(sentence) && sentence.length < 60) score -= 1;
 
@@ -119,7 +131,7 @@ function extractSummaryBullets(raw: string): string[] {
   const orderedBullets = selected
     .map((s) => ({ s, idx: allSentences.indexOf(s) }))
     .sort((a, b) => a.idx - b.idx)
-    .map(({ s }) => s);
+    .map(({ s }) => cleanLeadingConjunction(s));
 
   return orderedBullets.length > 0
     ? orderedBullets
@@ -228,7 +240,7 @@ export default function PostDetailView({
       if (res.ok) {
         const data = await res.json();
         if (data?.bullets?.length > 0) {
-          setSummaryBullets(data.bullets);
+          setSummaryBullets(data.bullets.map((b: string) => cleanLeadingConjunction(b)));
           setShowSummary(true);
           return;
         }
@@ -239,7 +251,7 @@ export default function PostDetailView({
       setLoadingSummary(false);
     }
 
-    setSummaryBullets(extractSummaryBullets(sourceText));
+    setSummaryBullets(extractSummaryBullets(sourceText).map(cleanLeadingConjunction));
     setShowSummary(true);
   };
 

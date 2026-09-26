@@ -95,6 +95,34 @@ export async function getFollowing(account: string, limit = 100) {
   ]);
 }
 
+export async function getFollowCount(username: string): Promise<{ follower_count: number; following_count: number }> {
+  try {
+    const res = (await callAPI(
+      STEEM_NODES,
+      "condenser_api.get_follow_count",
+      [username]
+    )) as { account: string; follower_count: number; following_count: number };
+    return {
+      follower_count: res?.follower_count || 0,
+      following_count: res?.following_count || 0,
+    };
+  } catch {
+    return { follower_count: 0, following_count: 0 };
+  }
+}
+
+export async function getAccountComments(account: string, limit = 20) {
+  try {
+    return (await callAPI(
+      STEEM_NODES,
+      "condenser_api.get_discussions_by_comments",
+      [{ start_author: account, limit }]
+    )) as unknown[];
+  } catch {
+    return [];
+  }
+}
+
 // ─── Transfer History & Smart Counterparties ──────────────────
 
 export interface CounterpartyInfo {
