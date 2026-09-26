@@ -1,0 +1,233 @@
+@import "tailwindcss";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #0a0a0a;
+    --foreground: #ededed;
+  }
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ─── Steem Editorial Markdown & HTML Styles ─── */
+.steem-content {
+  overflow-wrap: break-word;
+  word-break: break-word;
+}
+
+.steem-content p {
+  margin-bottom: 0.85rem;
+  line-height: 1.7;
+}
+
+.steem-content p:last-child {
+  margin-bottom: 0;
+}
+
+.steem-content h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 1.75rem;
+  margin-bottom: 0.75rem;
+  line-height: 1.25;
+}
+
+.steem-content h2 {
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 1.5rem;
+  margin-bottom: 0.6rem;
+  line-height: 1.3;
+}
+
+.steem-content h3 {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #f4f4f5;
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+  line-height: 1.35;
+}
+
+.steem-content h4 {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  margin-top: 1rem;
+  margin-bottom: 0.4rem;
+}
+
+.steem-content h5 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #d4d4d8;
+  margin-top: 0.85rem;
+  margin-bottom: 0.35rem;
+}
+
+.steem-content h6 {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #a1a1aa;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.75rem;
+  margin-bottom: 0.3rem;
+}
+
+.steem-content ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.steem-content ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+}
+
+.steem-content li {
+  margin-bottom: 0.35rem;
+}
+
+.steem-content blockquote {
+  border-left: 3px solid #06b6d4;
+  padding-left: 1rem;
+  padding-top: 0.25rem;
+  padding-bottom: 0.25rem;
+  margin: 1rem 0;
+  color: #a1a1aa;
+  font-style: italic;
+  background: rgba(24, 24, 27, 0.5);
+  border-radius: 0 0.5rem 0.5rem 0;
+}
+
+.steem-content hr {
+  border: 0;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+  margin: 1.5rem 0;
+}
+
+.steem-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.25rem 0;
+  font-size: 0.875rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 0.5rem;
+  overflow: hidden;
+}
+
+.steem-content th {
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(24, 24, 27, 0.8);
+  padding: 0.5rem 0.75rem;
+  font-weight: 600;
+  color: #e4e4e7;
+  text-align: left;
+}
+
+.steem-content td {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 0.5rem 0.75rem;
+  color: #d4d4d8;
+}
+
+.steem-content tr:nth-child(even) {
+  background: rgba(255, 255, 255, 0.02);
+}
+
+.steem-content code {
+  background: rgba(39, 39, 42, 0.9);
+  color: #67e8f9;
+  padding: 0.15rem 0.35rem;
+  border-radius: 0.25rem;
+  font-size: 0.85em;
+  font-family: monospace;
+}
+
+.steem-content pre {
+  background: #09090b;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 0.75rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+}
+
+.steem-content pre code {
+  background: transparent;
+  padding: 0;
+  color: #e4e4e7;
+}
+
+.steem-content a {
+  color: #38bdf8;
+  text-decoration: none;
+  transition: color 0.15s ease;
+}
+
+.steem-content a:hover {
+  color: #7dd3fc;
+  text-decoration: underline;
+}
+
+.steem-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 1rem auto;
+  display: block;
+}
+
+/* Steem legacy alignment and community classes */
+.steem-content .text-center,
+.steem-content center {
+  text-align: center;
+}
+
+.steem-content .text-right {
+  text-align: right;
+}
+
+.steem-content .text-justify {
+  text-align: justify;
+}
+
+.steem-content .pull-left {
+  float: left;
+  margin-right: 1rem;
+  margin-bottom: 0.75rem;
+  max-width: 50%;
+}
+
+.steem-content .pull-right {
+  float: right;
+  margin-left: 1rem;
+  margin-bottom: 0.75rem;
+  max-width: 50%;
+}
+
+.steem-content .phishy {
+  color: #fbbf24;
+  font-weight: bold;
+}
