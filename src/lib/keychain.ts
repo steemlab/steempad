@@ -184,6 +184,8 @@ export async function voteWithSteemKeychain(
   });
 }
 
+export type PostRewardOption = "50" | "100" | "0";
+
 /**
  * Broadcast a new post via Steem Keychain
  */
@@ -193,7 +195,8 @@ export async function submitPostWithSteemKeychain(
   body: string,
   tags: string[],
   parentAuthor = "",
-  parentPermlink = ""
+  parentPermlink = "",
+  rewardOption: PostRewardOption = "50"
 ): Promise<KeychainResponse> {
   const ready = await waitForSteemKeychain(500);
   if (!ready || !window.steem_keychain) {
@@ -211,10 +214,33 @@ export async function submitPostWithSteemKeychain(
   const permlink = `${cleanTitle}-${Date.now().toString(36)}`;
 
   const json_metadata = JSON.stringify({
-    app: "steemfeed/1.0",
+    app: "steempad/1.0",
     format: "markdown",
     tags: tags,
   });
+
+  let comment_options = "";
+  if (rewardOption === "100") {
+    comment_options = JSON.stringify({
+      author: username,
+      permlink: permlink,
+      max_accepted_payout: "1000000.000 SBD",
+      percent_steem_dollars: 0,
+      allow_votes: true,
+      allow_curation_rewards: true,
+      extensions: [],
+    });
+  } else if (rewardOption === "0") {
+    comment_options = JSON.stringify({
+      author: username,
+      permlink: permlink,
+      max_accepted_payout: "0.000 SBD",
+      percent_steem_dollars: 10000,
+      allow_votes: true,
+      allow_curation_rewards: true,
+      extensions: [],
+    });
+  }
 
   return new Promise((resolve) => {
     window.steem_keychain!.requestPost(
@@ -225,7 +251,7 @@ export async function submitPostWithSteemKeychain(
       parent_author,
       json_metadata,
       permlink,
-      "",
+      comment_options,
       (res: KeychainResponse) => {
         resolve(res);
       }
