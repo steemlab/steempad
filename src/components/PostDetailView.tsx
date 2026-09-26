@@ -145,6 +145,7 @@ export default function PostDetailView({
 
   const [copied, setCopied] = useState(false);
   const [showSummary, setShowSummary] = useState(false);
+  const [loadingSummary, setLoadingSummary] = useState(false);
   const [summaryBullets, setSummaryBullets] = useState<string[]>([]);
   const [translatedBody, setTranslatedBody] = useState<string | null>(null);
 
@@ -157,11 +158,39 @@ export default function PostDetailView({
     setSaved(isBookmarked(post.author, post.permlink));
   }, [post.author, post.permlink]);
 
-  // When post is translated, automatically update summary if it was generated
+  const generateSummary = async (sourceText: string) => {
+    setLoadingSummary(true);
+    try {
+      const res = await fetch("/api/summarize", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          text: sourceText,
+          title: post.title,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data?.bullets?.length > 0) {
+          setSummaryBullets(data.bullets);
+          setShowSummary(true);
+          return;
+        }
+      }
+    } catch (e) {
+      console.error("AI summary error:", e);
+    } finally {
+      setLoadingSummary(false);
+    }
+
+    setSummaryBullets(extractSummaryBullets(sourceText));
+    setShowSummary(true);
+  };
+
+  // When post is translated, automatically re-generate summary in English
   useEffect(() => {
-    if (summaryBullets.length > 0 || showSummary) {
-      const source = translatedBody || post.body || "";
-      setSummaryBullets(extractSummaryBullets(source));
+    if (translatedBody && (summaryBullets.length > 0 || showSummary)) {
+      generateSummary(translatedBody);
     }
   }, [translatedBody]);
 
@@ -185,14 +214,18 @@ export default function PostDetailView({
   };
 
   const handleGenerateSummary = () => {
+    if (showSummary) {
+      setShowSummary(false);
+      return;
+    }
+
     if (summaryBullets.length > 0) {
-      setShowSummary(!showSummary);
+      setShowSummary(true);
       return;
     }
 
     const source = translatedBody || post.body || "";
-    setSummaryBullets(extractSummaryBullets(source));
-    setShowSummary(true);
+    generateSummary(source);
   };
 
   const handlePostReply = async (e: React.FormEvent) => {
@@ -289,15 +322,25 @@ export default function PostDetailView({
 
             <button
               onClick={handleGenerateSummary}
+              disabled={loadingSummary}
               className={`px-3 py-1.5 rounded-xl border text-xs font-semibold flex items-center gap-1.5 transition cursor-pointer ${
                 showSummary
                   ? "bg-purple-950/60 border-purple-800 text-purple-300"
                   : "bg-gray-800/80 hover:bg-gray-800 border-gray-700/60 text-gray-300 hover:text-white"
-              }`}
+              } ${loadingSummary ? "opacity-75 cursor-wait" : ""}`}
               title="Instant AI TL;DR summary"
             >
-              <Sparkles className="w-3.5 h-3.5 text-purple-400" />
-              <span>AI TL;DR</span>
+              {loadingSummary ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 text-purple-400 animate-spin" />
+                  <span>Summarizing…</span>
+                </>
+              ) : (
+                <>
+                  <Sparkles className="w-3.5 h-3.5 text-purple-400" />
+                  <span>AI TL;DR</span>
+                </>
+              )}
             </button>
 
             <button
