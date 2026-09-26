@@ -1,8 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #09090b;
+  --foreground: #ededed;
+}
+
+html.light {
+  --background: #f8fafc;
+  --foreground: #0f172a;
 }
 
 @theme inline {
@@ -12,17 +17,267 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
 body {
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+}
+
+/* ─── Global Smooth Theme Transition ─── */
+html,
+body,
+header,
+nav,
+article,
+aside,
+main,
+button,
+input,
+textarea,
+select {
+  transition: background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+              color 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ─── Light Mode Styles & Overrides ─── */
+html.light {
+  color-scheme: light;
+}
+
+html.light body {
+  background-color: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Navigation bar in light mode */
+html.light header {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+  border-bottom-color: rgba(226, 232, 240, 0.9) !important;
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05) !important;
+}
+
+html.light header nav {
+  background-color: rgba(241, 245, 249, 0.85) !important;
+  border-color: rgba(203, 213, 225, 0.6) !important;
+}
+
+html.light header nav a {
+  color: #475569 !important;
+}
+
+html.light header nav a:hover {
+  color: #0f172a !important;
+  background-color: rgba(226, 232, 240, 0.8) !important;
+}
+
+/* Background containers */
+html.light .bg-gray-950,
+html.light .bg-zinc-950 {
+  background-color: #f8fafc !important;
+}
+
+html.light .bg-gray-900,
+html.light .bg-zinc-900 {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .bg-zinc-900\/80,
+html.light .bg-zinc-900\/70,
+html.light .bg-gray-900\/80 {
+  background-color: rgba(255, 255, 255, 0.9) !important;
+}
+
+html.light .bg-gray-800,
+html.light .bg-zinc-800,
+html.light .bg-zinc-850 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .bg-zinc-800\/80,
+html.light .bg-zinc-800\/60 {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .hover\:bg-zinc-800:hover,
+html.light .hover\:bg-gray-800:hover {
+  background-color: #e2e8f0 !important;
+}
+
+html.light .hover\:bg-zinc-800\/60:hover {
+  background-color: #f1f5f9 !important;
+}
+
+html.light .hover\:bg-zinc-700\/80:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* Borders */
+html.light .border-gray-800,
+html.light .border-zinc-800,
+html.light .border-zinc-800\/80,
+html.light .border-zinc-800\/60,
+html.light .border-gray-800\/80,
+html.light .border-gray-800\/60,
+html.light .border-gray-700\/80,
+html.light .border-gray-700\/60,
+html.light .border-white\/\[0\.08\],
+html.light .border-white\/\[0\.06\],
+html.light .border-gray-700,
+html.light .border-zinc-700 {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .divide-zinc-800,
+html.light .divide-zinc-800\/80,
+html.light .divide-zinc-800\/60,
+html.light .divide-gray-800,
+html.light .divide-gray-800\/80,
+html.light .divide-gray-800\/60 {
+  border-color: #e2e8f0 !important;
+}
+
+/* Typography */
+html.light .text-white {
+  color: #0f172a !important;
+}
+
+html.light .text-gray-100,
+html.light .text-zinc-100 {
+  color: #0f172a !important;
+}
+
+html.light .text-gray-200,
+html.light .text-zinc-200 {
+  color: #1e293b !important;
+}
+
+html.light .text-gray-300,
+html.light .text-zinc-300 {
+  color: #334155 !important;
+}
+
+html.light .text-gray-400,
+html.light .text-zinc-400 {
+  color: #64748b !important;
+}
+
+html.light .text-gray-500,
+html.light .text-zinc-500 {
+  color: #64748b !important;
+}
+
+html.light .hover\:text-white:hover {
+  color: #0f172a !important;
+}
+
+html.light .hover\:text-zinc-200:hover {
+  color: #0f172a !important;
+}
+
+/* Inputs, textareas */
+html.light input,
+html.light textarea,
+html.light select {
+  background-color: #ffffff !important;
+  color: #0f172a !important;
+  border-color: #cbd5e1 !important;
+}
+
+html.light input::placeholder,
+html.light textarea::placeholder {
+  color: #94a3b8 !important;
+}
+
+html.light kbd {
+  background-color: #e2e8f0 !important;
+  color: #475569 !important;
+  border-color: #cbd5e1 !important;
+}
+
+/* Cards & Articles in light mode */
+html.light article,
+html.light .bg-gray-900,
+html.light .bg-zinc-900 {
+  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px -1px rgba(0, 0, 0, 0.05);
+}
+
+/* Mobile navigation bar */
+html.light .md\:hidden.fixed.bottom-0 {
+  background-color: rgba(255, 255, 255, 0.95) !important;
+  border-top-color: #e2e8f0 !important;
+  box-shadow: 0 -1px 3px 0 rgba(0, 0, 0, 0.05);
+}
+
+/* Dropdown menus and popovers */
+html.light [role="menu"],
+html.light [role="region"][aria-label="Activity Notifications Panel"] {
+  background-color: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.05) !important;
+}
+
+/* Modals */
+html.light .fixed.inset-0.bg-black\/80,
+html.light .fixed.inset-0.bg-black\/70 {
+  background-color: rgba(15, 23, 42, 0.45) !important;
+}
+
+/* Steem Content / Articles in Light Mode */
+html.light .steem-content h1,
+html.light .steem-content h2,
+html.light .steem-content h3,
+html.light .steem-content h4,
+html.light .steem-content h5,
+html.light .steem-content h6 {
+  color: #0f172a !important;
+}
+
+html.light .steem-content p,
+html.light .steem-content li,
+html.light .steem-content td {
+  color: #334155 !important;
+}
+
+html.light .steem-content blockquote {
+  background: #f1f5f9 !important;
+  color: #475569 !important;
+  border-left-color: #0284c7 !important;
+}
+
+html.light .steem-content hr {
+  border-top-color: #e2e8f0 !important;
+}
+
+html.light .steem-content table {
+  border-color: #e2e8f0 !important;
+}
+
+html.light .steem-content th {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .steem-content tr:nth-child(even) {
+  background: #f8fafc !important;
+}
+
+html.light .steem-content code {
+  background: #f1f5f9 !important;
+  color: #0369a1 !important;
+  border: 1px solid #e2e8f0;
+}
+
+html.light .steem-content pre {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+}
+
+html.light .steem-content pre code {
+  background: transparent !important;
+  color: #0f172a !important;
 }
 
 /* ─── Steem Editorial Markdown & HTML Styles ─── */

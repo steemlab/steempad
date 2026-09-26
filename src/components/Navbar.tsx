@@ -5,6 +5,7 @@ import { useState, useEffect, useRef } from "react";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/context/AuthContext";
 import { useCurrency } from "@/context/CurrencyContext";
+import { useTheme } from "@/context/ThemeContext";
 import { CurrencyCode } from "@/lib/currency";
 import { getBookmarks } from "@/lib/bookmarks";
 import NotificationCenter from "./NotificationCenter";
@@ -32,6 +33,7 @@ export default function Navbar() {
   const pathname = usePathname();
   const { user, isLoggedIn, logout } = useAuth();
   const { currency, setCurrency } = useCurrency();
+  const { theme, toggleTheme } = useTheme();
 
   const [menuOpen, setMenuOpen] = useState(false);
   const [userDropdown, setUserDropdown] = useState(false);
@@ -39,7 +41,6 @@ export default function Navbar() {
   const [searchModalOpen, setSearchModalOpen] = useState(false);
   const [savedCount, setSavedCount] = useState(0);
   const [mounted, setMounted] = useState(false);
-  const [theme, setTheme] = useState<"dark" | "light">("dark");
 
   const currencyRef = useRef<HTMLDivElement>(null);
   const userRef = useRef<HTMLDivElement>(null);
@@ -47,9 +48,6 @@ export default function Navbar() {
   useEffect(() => {
     setMounted(true);
     setSavedCount(getBookmarks().length);
-
-    const savedTheme = (localStorage.getItem("steempad_theme") as "dark" | "light") || "dark";
-    setTheme(savedTheme);
 
     const updateSaved = () => setSavedCount(getBookmarks().length);
     window.addEventListener("steempad_bookmarks_updated", updateSaved);
@@ -84,21 +82,6 @@ export default function Navbar() {
       window.removeEventListener("keydown", handleKeyDown);
     };
   }, []);
-
-  const toggleTheme = () => {
-    const next = theme === "dark" ? "light" : "dark";
-    setTheme(next);
-    if (typeof window !== "undefined") {
-      localStorage.setItem("steempad_theme", next);
-      if (next === "light") {
-        document.documentElement.classList.add("light");
-        document.documentElement.classList.remove("dark");
-      } else {
-        document.documentElement.classList.add("dark");
-        document.documentElement.classList.remove("light");
-      }
-    }
-  };
 
   const currencies: { code: CurrencyCode; label: string; symbol: string }[] = [
     { code: "USD", label: "US Dollar", symbol: "$" },
