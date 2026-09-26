@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import VoteButton from "./VoteButton";
 import TipModal from "./TipModal";
@@ -23,10 +23,10 @@ import {
   Bookmark,
 } from "lucide-react";
 import { isBookmarked, toggleBookmark } from "@/lib/bookmarks";
-import { useEffect } from "react";
 import { renderSteemMarkdown, cleanExcerpt } from "@/lib/renderMarkdown";
 import VotersPanel from "./VotersPanel";
 import TranslateButton from "./TranslateButton";
+import ReaderModeSettings, { ReaderSettings, DEFAULT_READER_SETTINGS } from "./ReaderModeSettings";
 
 
 interface ActiveVote {
@@ -148,6 +148,62 @@ export default function PostDetailView({
   const [loadingSummary, setLoadingSummary] = useState(false);
   const [summaryBullets, setSummaryBullets] = useState<string[]>([]);
   const [translatedBody, setTranslatedBody] = useState<string | null>(null);
+
+  // Reader Mode & Typography settings state
+  const [readerSettings, setReaderSettings] = useState<ReaderSettings>(DEFAULT_READER_SETTINGS);
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("steempad_reader_settings_v1");
+        if (stored) {
+          const parsed = JSON.parse(stored);
+          setReaderSettings({
+            ...DEFAULT_READER_SETTINGS,
+            ...parsed,
+            isFocusMode: false,
+          });
+        }
+      } catch {}
+    }
+  }, []);
+
+  const handleReaderSettingsChange = (newSettings: ReaderSettings) => {
+    setReaderSettings(newSettings);
+    if (typeof window !== "undefined") {
+      try {
+        const toStore = {
+          fontSize: newSettings.fontSize,
+          fontFamily: newSettings.fontFamily,
+          lineHeight: newSettings.lineHeight,
+        };
+        localStorage.setItem("steempad_reader_settings_v1", JSON.stringify(toStore));
+      } catch {}
+    }
+  };
+
+  const typographyClassName = useMemo(() => {
+    const fontSizes: Record<string, string> = {
+      sm: "text-sm",
+      base: "text-base",
+      lg: "text-lg",
+      xl: "text-xl",
+    };
+    const fontFamilies: Record<string, string> = {
+      sans: "font-sans",
+      serif: "font-serif tracking-normal",
+      mono: "font-mono text-[0.92em]",
+    };
+    const lineHeights: Record<string, string> = {
+      normal: "leading-normal",
+      relaxed: "leading-relaxed",
+      loose: "leading-loose",
+    };
+
+    return `${fontSizes[readerSettings.fontSize] || "text-base"} ${
+      fontFamilies[readerSettings.fontFamily] || "font-sans"
+    } ${lineHeights[readerSettings.lineHeight] || "leading-relaxed"} text-gray-200`;
+  }, [readerSettings.fontSize, readerSettings.fontFamily, readerSettings.lineHeight]);
 
   // Micro-tipping modal state
   const [tipModalOpen, setTipModalOpen] = useState(false);
@@ -271,7 +327,28 @@ export default function PostDetailView({
   };
 
   return (
-    <article className="max-w-3xl mx-auto space-y-6">
+    <article
+      className={`${
+        readerSettings.isFocusMode ? "max-w-2xl" : "max-w-3xl"
+      } mx-auto space-y-6 transition-all duration-300`}
+    >
+      {/* Distraction-Free Focus Mode Floating Bar */}
+      {readerSettings.isFocusMode && (
+        <div className="sticky top-20 z-40 flex items-center justify-between px-4 py-2.5 bg-gray-900/95 backdrop-blur-md border border-cyan-500/40 rounded-2xl shadow-2xl text-xs text-cyan-300 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-cyan-400 animate-pulse" />
+            <span className="font-semibold">Distraction-Free Focus Mode</span>
+          </div>
+          <button
+            type="button"
+            onClick={() => handleReaderSettingsChange({ ...readerSettings, isFocusMode: false })}
+            className="px-2.5 py-1 bg-cyan-950/80 hover:bg-cyan-900 border border-cyan-800 rounded-xl text-[11px] font-bold text-cyan-300 transition cursor-pointer flex items-center gap-1 shadow-sm"
+          >
+            <span>Exit Focus (ESC)</span>
+          </button>
+        </div>
+      )}
+
       {/* Top Card: Post Title & Metadata */}
       <div className="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-10 shadow-sm">
         <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-6 leading-tight">
@@ -305,7 +382,7 @@ export default function PostDetailView({
             </div>
           </Link>
 
-          {/* Action buttons (Tip, AI Summary & Share) */}
+          {/* Action buttons (Tip, AI Summary, Share, Bookmark & Reader Settings) */}
           <div className="flex items-center gap-2 self-start sm:self-auto">
             {/* Quick Tip Button */}
             <button
@@ -378,6 +455,12 @@ export default function PostDetailView({
             >
               <Bookmark className={`w-4 h-4 ${saved ? "fill-purple-400" : ""}`} />
             </button>
+
+            {/* Editorial Reader Mode (Aa) */}
+            <ReaderModeSettings
+              settings={readerSettings}
+              onChange={handleReaderSettingsChange}
+            />
           </div>
 
         </div>
@@ -403,12 +486,13 @@ export default function PostDetailView({
           </div>
         )}
 
-        {/* Article Body with Integrated Auto-Translate */}
+        {/* Article Body with Integrated Auto-Translate & Reader Typography */}
         <TranslateButton
           originalMarkdown={post.body || ""}
           defaultBodyHtml={bodyHtml}
           jsonMetadata={post.json_metadata}
           onTranslatedTextChange={setTranslatedBody}
+          typographyClassName={typographyClassName}
         />
 
         {/* Action bar / Upvote / Tip / Payout */}
@@ -458,114 +542,129 @@ export default function PostDetailView({
       </div>
 
       {/* Interactive Comments Section */}
-      <section className="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-        <h2 className="text-lg font-bold text-gray-200 flex items-center gap-2">
-          <MessageSquare className="w-5 h-5 text-blue-400" />
-          <span>Comments ({comments.length})</span>
-        </h2>
-
-        {/* New Reply Box */}
-        {isLoggedIn && user ? (
-          <form onSubmit={handlePostReply} className="space-y-3">
-            {commentError && (
-              <div className="p-3 bg-red-950/60 border border-red-800 rounded-xl text-red-300 text-xs flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 shrink-0" />
-                <span>{commentError}</span>
-              </div>
-            )}
-            <textarea
-              rows={3}
-              placeholder={`Write a thoughtful reply to @${post.author}...`}
-              value={newComment}
-              onChange={(e) => setNewComment(e.target.value)}
-              className="w-full bg-gray-950 border border-gray-800 rounded-2xl p-4 text-xs sm:text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500 transition"
-            />
-            <div className="flex justify-end">
-              <button
-                type="submit"
-                disabled={submittingComment}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
-              >
-                {submittingComment ? (
-                  <>
-                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                    <span>Posting to Steem…</span>
-                  </>
-                ) : (
-                  <>
-                    <Send className="w-3.5 h-3.5" />
-                    <span>Reply</span>
-                  </>
-                )}
-              </button>
-            </div>
-          </form>
-        ) : (
-          <div className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800/80 text-xs text-gray-400 flex items-center justify-between">
-            <span>Sign in with Steem Keychain to join the discussion.</span>
-            <Link
-              suppressHydrationWarning
-              href="/login"
-              className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-sm"
-            >
-              Sign In
-            </Link>
-          </div>
-        )}
-
-        {/* Comments List */}
-        <div className="space-y-3.5 pt-2">
-          {comments.length === 0 ? (
-            <p className="text-gray-500 text-sm italic py-4 text-center">
-              No replies yet. Be the first to share your thoughts!
-            </p>
-          ) : (
-            comments.map((c, i) => (
-              <div
-                key={i}
-                className="bg-gray-950/70 border border-gray-800/80 rounded-2xl p-4 transition"
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <Link
-                    suppressHydrationWarning
-                    href={`/@${c.author}`}
-                    className="font-semibold text-xs text-blue-400 hover:underline"
-                  >
-                    @{c.author}
-                  </Link>
-
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={() => {
-                        setTipTarget(c.author);
-                        setTipModalOpen(true);
-                      }}
-                      className="text-gray-500 hover:text-amber-400 text-xs flex items-center gap-1 transition cursor-pointer"
-                      title={`Tip @${c.author}`}
-                    >
-                      <Coins className="w-3 h-3 text-amber-400/80" />
-                      <span>Tip</span>
-                    </button>
-
-                    <span
-                      suppressHydrationWarning
-                      className="text-gray-600 text-xs"
-                    >
-                      {timeAgo(c.created)}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className="steem-content text-gray-300 text-sm leading-relaxed"
-                  dangerouslySetInnerHTML={{
-                    __html: renderSteemMarkdown(c.body || ""),
-                  }}
-                />
-              </div>
-            ))
-          )}
+      {readerSettings.isFocusMode ? (
+        <div className="text-center py-8 px-4 bg-gray-900/60 border border-gray-800/80 rounded-3xl">
+          <p className="text-xs text-gray-400 mb-2">
+            Focus Mode is active · Comments hidden for a quiet reading session
+          </p>
+          <button
+            type="button"
+            onClick={() => handleReaderSettingsChange({ ...readerSettings, isFocusMode: false })}
+            className="text-xs font-semibold text-cyan-400 hover:text-cyan-300 underline cursor-pointer"
+          >
+            Show {comments.length} comments and join discussion
+          </button>
         </div>
-      </section>
+      ) : (
+        <section className="bg-gray-900 border border-gray-800 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
+          <h2 className="text-lg font-bold text-gray-200 flex items-center gap-2">
+            <MessageSquare className="w-5 h-5 text-blue-400" />
+            <span>Comments ({comments.length})</span>
+          </h2>
+
+          {/* New Reply Box */}
+          {isLoggedIn && user ? (
+            <form onSubmit={handlePostReply} className="space-y-3">
+              {commentError && (
+                <div className="p-3 bg-red-950/60 border border-red-800 rounded-xl text-red-300 text-xs flex items-center gap-2">
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{commentError}</span>
+                </div>
+              )}
+              <textarea
+                rows={3}
+                placeholder={`Write a thoughtful reply to @${post.author}...`}
+                value={newComment}
+                onChange={(e) => setNewComment(e.target.value)}
+                className="w-full bg-gray-950 border border-gray-800 rounded-2xl p-4 text-xs sm:text-sm text-gray-200 placeholder-gray-600 focus:outline-none focus:border-blue-500 transition"
+              />
+              <div className="flex justify-end">
+                <button
+                  type="submit"
+                  disabled={submittingComment}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-bold rounded-xl text-xs transition flex items-center gap-1.5 shadow-md active:scale-95 cursor-pointer"
+                >
+                  {submittingComment ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Posting to Steem…</span>
+                    </>
+                  ) : (
+                    <>
+                      <Send className="w-3.5 h-3.5" />
+                      <span>Reply</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </form>
+          ) : (
+            <div className="p-4 rounded-2xl bg-gray-950/70 border border-gray-800/80 text-xs text-gray-400 flex items-center justify-between">
+              <span>Sign in with Steem Keychain to join the discussion.</span>
+              <Link
+                suppressHydrationWarning
+                href="/login"
+                className="px-3.5 py-1.5 rounded-xl bg-blue-600 hover:bg-blue-500 text-white font-bold text-xs transition shadow-sm"
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
+
+          {/* Comments List */}
+          <div className="space-y-3.5 pt-2">
+            {comments.length === 0 ? (
+              <p className="text-gray-500 text-sm italic py-4 text-center">
+                No replies yet. Be the first to share your thoughts!
+              </p>
+            ) : (
+              comments.map((c, i) => (
+                <div
+                  key={i}
+                  className="bg-gray-950/70 border border-gray-800/80 rounded-2xl p-4 transition"
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <Link
+                      suppressHydrationWarning
+                      href={`/@${c.author}`}
+                      className="font-semibold text-xs text-blue-400 hover:underline"
+                    >
+                      @{c.author}
+                    </Link>
+
+                    <div className="flex items-center gap-3">
+                      <button
+                        onClick={() => {
+                          setTipTarget(c.author);
+                          setTipModalOpen(true);
+                        }}
+                        className="text-gray-500 hover:text-amber-400 text-xs flex items-center gap-1 transition cursor-pointer"
+                        title={`Tip @${c.author}`}
+                      >
+                        <Coins className="w-3 h-3 text-amber-400/80" />
+                        <span>Tip</span>
+                      </button>
+
+                      <span
+                        suppressHydrationWarning
+                        className="text-gray-600 text-xs"
+                      >
+                        {timeAgo(c.created)}
+                      </span>
+                    </div>
+                  </div>
+                  <div
+                    className="steem-content text-gray-300 text-sm leading-relaxed"
+                    dangerouslySetInnerHTML={{
+                      __html: renderSteemMarkdown(c.body || ""),
+                    }}
+                  />
+                </div>
+              ))
+            )}
+          </div>
+        </section>
+      )}
 
       {/* Global Tip Modal */}
       <TipModal

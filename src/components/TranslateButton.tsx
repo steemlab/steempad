@@ -9,6 +9,7 @@ interface TranslateViewProps {
   defaultBodyHtml: string;
   jsonMetadata?: string;
   onTranslatedTextChange?: (text: string | null) => void;
+  typographyClassName?: string;
 }
 
 const SCRIPT_DETECTORS = [
@@ -40,6 +41,7 @@ export default function TranslateButton({
   defaultBodyHtml,
   jsonMetadata,
   onTranslatedTextChange,
+  typographyClassName,
 }: TranslateViewProps) {
   const [detectedLang, setDetectedLang] = useState<{ name: string; code: string } | null>(null);
   const [isTranslating, setIsTranslating] = useState(false);
@@ -225,7 +227,9 @@ export default function TranslateButton({
 
       {/* 3. The Article Content itself */}
       <div
-        className="steem-content text-gray-200 leading-relaxed text-base break-words selection:bg-cyan-500 selection:text-black"
+        className={`steem-content break-words selection:bg-cyan-500 selection:text-black ${
+          typographyClassName || "text-gray-200 leading-relaxed text-base"
+        }`}
         dangerouslySetInnerHTML={{ __html: activeHtml }}
       />
     </div>

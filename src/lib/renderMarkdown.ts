@@ -38,7 +38,40 @@ function preprocessSteemContent(raw: string): string {
     }
   );
 
-  // 3. Link Steem user mentions @username (e.g. @steem-seven, @cryptogecko)
+  // 3. Autolink & embed rich media (YouTube, Vimeo, Spotify)
+  // YouTube videos (watch, embed, shorts, youtu.be)
+  processed = processed.replace(
+    /(?:^|\n)\s*(https?:\/\/(?:www\.)?(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([a-zA-Z0-9_-]{11})(?:\S*)?)\s*(?:\n|$)/gi,
+    (match, url, videoId) => {
+      return `\n\n<div class="steem-media-embed aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-800 my-5 bg-black"><iframe src="https://www.youtube-nocookie.com/embed/${videoId}" class="w-full h-full border-0" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" allowfullscreen loading="lazy" title="YouTube video"></iframe></div>\n\n`;
+    }
+  );
+
+  // Vimeo videos
+  processed = processed.replace(
+    /(?:^|\n)\s*(https?:\/\/(?:player\.)?vimeo\.com\/(?:video\/)?([0-9]+)(?:\S*)?)\s*(?:\n|$)/gi,
+    (match, url, videoId) => {
+      return `\n\n<div class="steem-media-embed aspect-video w-full rounded-2xl overflow-hidden shadow-lg border border-gray-800 my-5 bg-black"><iframe src="https://player.vimeo.com/video/${videoId}" class="w-full h-full border-0" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen loading="lazy" title="Vimeo video"></iframe></div>\n\n`;
+    }
+  );
+
+  // Spotify embeds (tracks, albums, playlists, episodes)
+  processed = processed.replace(
+    /(?:^|\n)\s*(https?:\/\/open\.spotify\.com\/(track|album|playlist|episode)\/([a-zA-Z0-9]+)(?:\S*)?)\s*(?:\n|$)/gi,
+    (match, url, type, id) => {
+      return `\n\n<div class="steem-media-embed w-full my-4 rounded-2xl overflow-hidden border border-gray-800 shadow-md"><iframe src="https://open.spotify.com/embed/${type}/${id}" class="w-full h-[152px] border-0" allow="encrypted-media" loading="lazy" title="Spotify embed"></iframe></div>\n\n`;
+    }
+  );
+
+  // Twitter / X status embeds
+  processed = processed.replace(
+    /(?:^|\n)\s*(https?:\/\/(?:twitter\.com|x\.com)\/([a-zA-Z0-9_]{1,25})\/status\/([0-9]+)(?:\S*)?)\s*(?:\n|$)/gi,
+    (match, url, username, tweetId) => {
+      return `\n\n<div class="steem-media-embed my-4 max-w-lg mx-auto rounded-2xl overflow-hidden border border-gray-800 bg-gray-950 p-1"><iframe src="https://platform.twitter.com/embed/Tweet.html?dnt=true&id=${tweetId}" class="w-full min-h-[320px] border-0 rounded-xl" loading="lazy" title="Post on X by @${username}"></iframe></div>\n\n`;
+    }
+  );
+
+  // 4. Link Steem user mentions @username (e.g. @steem-seven, @cryptogecko)
   // Ensures not preceded by / or email or already inside markdown link
   processed = processed.replace(
     /(^|[\s(])@([a-z0-9.-]{3,16})\b(?![^<]*>)/g,
@@ -76,7 +109,7 @@ export function renderSteemMarkdown(raw: string): string {
       "strong", "b", "em", "i", "u", "s", "strike", "del",
       "ul", "ol", "li",
       "blockquote", "code", "pre",
-      "a", "img",
+      "a", "img", "iframe",
       "table", "thead", "tbody", "tr", "th", "td",
       "div", "span", "center", "sub", "sup",
       "details", "summary",
@@ -84,6 +117,7 @@ export function renderSteemMarkdown(raw: string): string {
     allowedAttributes: {
       a: ["href", "name", "target", "rel", "class", "title"],
       img: ["src", "alt", "title", "class", "loading", "width", "height"],
+      iframe: ["src", "class", "allow", "allowfullscreen", "loading", "width", "height", "frameborder", "title"],
       div: ["class", "align", "style"],
       span: ["class", "style"],
       p: ["class", "align"],
@@ -99,6 +133,14 @@ export function renderSteemMarkdown(raw: string): string {
       code: ["class"],
       pre: ["class"],
     },
+    allowedIframeHostnames: [
+      "www.youtube.com",
+      "www.youtube-nocookie.com",
+      "player.vimeo.com",
+      "open.spotify.com",
+      "platform.twitter.com",
+      "twitframe.com",
+    ],
     allowedSchemes: ["http", "https", "mailto"],
     transformTags: {
       a: (tagName, attribs) => {
@@ -143,6 +185,10 @@ export function cleanExcerpt(raw: string, maxLength: number = 180): string {
   // Remove markdown images and links
   text = text.replace(/!\[.*?\]\(.*?\)/g, "");
   text = text.replace(/\[(.*?)\]\(.*?\)/g, "$1");
+
+  // Remove bare media embed URLs (YouTube, Vimeo, Spotify, Twitter / X)
+  text = text.replace(/https?:\/\/(?:www\.)?(?:youtube\.com|youtu\.be|vimeo\.com|player\.vimeo\.com|open\.spotify\.com|(?:twitter|x)\.com\/\w+\/status\/\d+)\/\S*/gi, "");
+  text = text.replace(/https?:\/\/(?:twitter|x)\.com\/[a-zA-Z0-9_]+\/status\/[0-9]+/gi, "");
 
   // Remove HTML tags
   text = text.replace(/<[^>]*>/g, " ");

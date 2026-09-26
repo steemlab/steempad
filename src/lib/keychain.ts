@@ -426,4 +426,35 @@ export async function voteWitnessWithSteemKeychain(
   });
 }
 
+/**
+ * Detect if the client is running on a mobile device (Android, iOS, iPadOS)
+ */
+export function isMobileDevice(): boolean {
+  if (typeof window === "undefined" || typeof navigator === "undefined") {
+    return false;
+  }
+  const ua = navigator.userAgent || navigator.vendor || "";
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+}
+
+/**
+ * App store and website links for Steem Keychain Mobile & Extensions
+ */
+export const STEEM_KEYCHAIN_MOBILE_LINKS = {
+  android: "https://play.google.com/store/apps/details?id=com.steemkeychain.mobile",
+  ios: "https://apps.apple.com/app/steem-keychain/id1527786483",
+  website: "https://steem-keychain.com/",
+  extensionChrome: "https://chromewebstore.google.com/detail/steem-keychain/lkcjlnjfpbikmcmbachjpdbijejflpcm",
+  extensionFirefox: "https://addons.mozilla.org/en-US/firefox/addon/steem-keychain/",
+};
+
+/**
+ * Generates a deep link to open any URL directly inside the Steem Keychain Mobile App's Web3 browser.
+ * Inside Keychain Mobile's browser, window.steem_keychain is natively injected!
+ */
+export function getSteemKeychainMobileBrowseUrl(targetUrl?: string): string {
+  const current = targetUrl || (typeof window !== "undefined" ? window.location.href : "https://steempad.com");
+  return `steem-keychain://browse?url=${encodeURIComponent(current)}`;
+}
+
 
